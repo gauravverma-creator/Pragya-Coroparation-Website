@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayan AI | AI Trip Planner - AdiPragya Corporation</title>
+    <meta name="description" content="Plan your perfect journey with Prayan AI - Ancient wisdom meets modern travel planning. Get personalized itineraries powered by AI.">
+    <link rel="stylesheet" href="trip-planner.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Ads (Left) -->
+        <aside class="ads-sidebar sidebar-left">
+            <div class="ad-placeholder-160x600">
+                <span>Advertisement</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="logo">
+                    <span class="logo-icon">✨</span>
+                    <span class="logo-text">Prayan AI</span>
+                </div>
+                <div class="header-actions">
+                    <button id="apiKeyBtn" class="btn btn-outline">
+                        <i data-lucide="key"></i> Gemini API Key
+                    </button>
+                </div>
+            </header>
+
+            <!-- API Key Backdrop/Modal (Simple) -->
+            <div id="apiKeyModal" class="modal">
+                <div class="modal-content">
+                    <h3>Set AI API Key</h3>
+                    <p>Select your AI provider and enter your API key to enable trip planning. Your key is stored locally in your browser.</p>
+                    <div class="input-group-vertical">
+                        <div class="select-wrapper">
+                            <label for="apiProvider">API Provider</label>
+                            <select id="apiProvider">
+                                <option value="gemini" selected>Google Gemini (Free/Paid)</option>
+                                <option value="openai">OpenAI (GPT-4o / GPT-3.5)</option>
+                                <option value="openrouter">OpenRouter (Best for Any Model)</option>
+                                <option value="custom">Custom (OpenAI Compatible)</option>
+                            </select>
+                        </div>
+                        <div id="customUrlWrapper" class="input-wrapper-simple hidden">
+                            <label for="apiBaseUrl">API Base URL</label>
+                            <input type="text" id="apiBaseUrl" placeholder="https://api.example.com/v1">
+                        </div>
+                        <div class="input-wrapper-simple">
+                            <label for="apiKeyInput">API Key</label>
+                            <input type="password" id="apiKeyInput" placeholder="Enter your API key...">
+                        </div>
+                        <button id="saveApiKey" class="btn btn-primary w-full">Save Configuration</button>
+                    </div>
+                    <p class="modal-note" id="providerLink">Get a Gemini key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
+                    <button class="modal-close" id="closeModal">&times;</button>
+                </div>
+            </div>
+
+            <!-- Hero Section / Form Page -->
+            <section id="plannerFormSection" class="section">
+                <div class="hero-content text-center">
+                    <h1 class="hero-title serif">✦ Prayan AI ✦</h1>
+                    <p class="sanskrit-sub serif" style="font-size: 1.8rem; margin-bottom: 0.5rem; letter-spacing: 4px;">प्रयाण</p>
+                    <p class="hero-subtitle">Your AI Journey Companion</p>
+                    <p style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">Powered by AdiPragya Corporation</p>
+                </div>
+
+                <div class="planner-card-container">
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="stepCountDisplay">Step 1 of 11</span>
+                            <span id="progressPercentage">9%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progressBarFill" class="progress-fill" style="width: 9.09%;"></div>
+                        </div>
+                    </div>
+
+                    <div id="questionsFlow" class="questions-container">
+                        <!-- Q1: Destination -->
+                        <div class="question-step active" data-step="1">
+                            <label class="question-label">Where do you want to go?</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="map-pin" class="input-icon"></i>
+                                <input type="text" id="q1-destination" placeholder="e.g. Varanasi, Rishikesh, or Paris" required>
+                            </div>
+                        </div>
+
+                        <!-- Q2: Starting City -->
+                        <div class="question-step" data-step="2">
+                            <label class="question-label">Where are you starting from?</label>
+                            <p class="question-desc">(Starting city or location)</p>
+                            <div class="input-wrapper">
+                                <i data-lucide="navigation" class="input-icon"></i>
+                                <input type="text" id="q2-origin" placeholder="e.g. Delhi, Mumbai, Bhopal" required>
+                            </div>
+                        </div>
+
+                        <!-- Q3: Days -->
+                        <div class="question-step" data-step="3">
+                            <label class="question-label">How many days?</label>
+                            <div class="options-grid grid-days">
+                                <button type="button" class="option-btn" data-value="3">3</button>
+                                <button type="button" class="option-btn" data-value="5">5</button>
+                                <button type="button" class="option-btn" data-value="7">7</button>
+                                <button type="button" class="option-btn" data-value="10">10</button>
+                                <button type="button" class="option-btn" data-value="14">14</button>
+                                <div class="custom-input-small">
+                                    <input type="number" id="q3-days-custom" min="1" max="30" placeholder="Custom">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q4: Travelers -->
+                        <div class="question-step" data-step="4">
+                            <label class="question-label">Number of travelers?</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="users" class="input-icon"></i>
+                                <input type="number" id="q4-travelers" min="1" max="10" value="1" placeholder="1 to 10" required>
+                            </div>
+                        </div>
+
+                        <!-- Q5: Budget -->
+                        <div class="question-step" data-step="5">
+                            <label class="question-label">Budget range for this journey?</label>
+                            <p class="question-desc">(Per person)</p>
+                            <div class="options-grid grid-4-cols">
+                                <button type="button" class="option-btn" data-value="₹5k-10k">₹5k - 10k</button>
+                                <button type="button" class="option-btn" data-value="₹10k-20k">₹10k - 20k</button>
+                                <button type="button" class="option-btn" data-value="₹20k-50k">₹20k - 50k</button>
+                                <button type="button" class="option-btn" data-value="₹50k+">₹50k+</button>
+                            </div>
+                        </div>
+
+                        <!-- Q6: Travel Mode -->
+                        <div class="question-step" data-step="6">
+                            <label class="question-label">Preferred travel mode?</label>
+                            <div class="options-grid grid-4-cols">
+                                <button type="button" class="option-btn icon-btn" data-value="Train">
+                                    <span class="icon-lg">🚂</span>
+                                    <span>Train</span>
+                                </button>
+                                <button type="button" class="option-btn icon-btn" data-value="Bus">
+                                    <span class="icon-lg">🚌</span>
+                                    <span>Bus</span>
+                                </button>
+                                <button type="button" class="option-btn icon-btn" data-value="Flight">
+                                    <span class="icon-lg">✈️</span>
+                                    <span>Flight</span>
+                                </button>
+                                <button type="button" class="option-btn icon-btn" data-value="Car">
+                                    <span class="icon-lg">🚗</span>
+                                    <span>Car</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Q7: Accommodation -->
+                        <div class="question-step" data-step="7">
+                            <label class="question-label">Accommodation type?</label>
+                            <div class="options-grid grid-3-cols">
+                                <button type="button" class="option-btn stacked-btn" data-value="Budget">
+                                    <strong>Budget</strong>
+                                    <small>Economy hostels & guesthouses</small>
+                                </button>
+                                <button type="button" class="option-btn stacked-btn" data-value="Mid-range">
+                                    <strong>Mid-range</strong>
+                                    <small>Comfort hotels and BnBs</small>
+                                </button>
+                                <button type="button" class="option-btn stacked-btn" data-value="Luxury">
+                                    <strong>Luxury</strong>
+                                    <small>Premium resorts and stays</small>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Q8: Specific Hotels -->
+                        <div class="question-step" data-step="8">
+                            <label class="question-label">Any specific hotels or areas you prefer to stay?</label>
+                            <textarea id="q8-hotels" placeholder="e.g., Near beach, specific hotel names, or leave blank for AI suggestions"></textarea>
+                        </div>
+
+                        <!-- Q9: Trip Type -->
+                        <div class="question-step" data-step="9">
+                            <label class="question-label">What is the vibe of this trip?</label>
+                            <div class="options-grid grid-wrap">
+                                <button type="button" class="option-btn pill" data-value="Adventure">Adventure</button>
+                                <button type="button" class="option-btn pill" data-value="Relaxation">Relaxation</button>
+                                <button type="button" class="option-btn pill" data-value="Cultural">Cultural</button>
+                                <button type="button" class="option-btn pill" data-value="Family">Family</button>
+                                <button type="button" class="option-btn pill" data-value="Romantic">Romantic</button>
+                            </div>
+                        </div>
+
+                        <!-- Q10: Must-visit places -->
+                        <div class="question-step" data-step="10">
+                            <label class="question-label">Which places do you want to visit?</label>
+                            <textarea id="q10-places" placeholder="e.g., Taj Mahal, beaches, temples, or leave blank for AI recommendations"></textarea>
+                        </div>
+
+                        <!-- Q11: Extra Preferences -->
+                        <div class="question-step" data-step="11">
+                            <label class="question-label">Any specific preferences?</label>
+                            <p class="question-desc">(Optional: Vegetarian, religious sites, kids-friendly, etc.)</p>
+                            <textarea id="q11-preferences" placeholder="e.g. Focus on local temples, need wheelchair access, pure veg food only..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-navigation">
+                        <button id="prevBtn" class="btn btn-text invisible">
+                            <i data-lucide="chevron-left"></i> Back
+                        </button>
+                        <button id="nextBtn" class="btn btn-primary" disabled>
+                            Continue Journey <i data-lucide="chevron-right"></i>
+                        </button>
+                        <button id="generateBtn" class="btn btn-accent hidden">
+                            Craft My Itinerary ✨
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Featured Card (Visual from UI) -->
+                <div class="featured-promo-container">
+                    <div class="featured-card">
+                        <div class="featured-content">
+                            <div class="featured-img-wrap">
+                                <img src="https://images.unsplash.com/photo-1548013146-72479768bbaa?q=80&w=2073&auto=format&fit=crop" alt="Varanasi" class="featured-img">
+                            </div>
+                            <div class="featured-text">
+                                <span class="badge">Trending</span>
+                                <h3>Upgrade to Palace on Wheels</h3>
+                                <p>Experience royalty with our curated train journeys</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm">Explore</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Section -->
+            <section id="loadingSection" class="section hidden">
+                <div class="loading-container">
+                    <div class="compass-loader">
+                        <div class="compass-needle"></div>
+                    </div>
+                    <h2 class="serif">Curating Your Journey...</h2>
+                    <p id="loadingMessage">Searching for the best routes and stays in <span id="loadingDest">Varanasi</span></p>
+                    <div class="loading-steps">
+                        <div class="loading-step active" id="lStep1">Analyzing preferences...</div>
+                        <div class="loading-step" id="lStep2">Finding transport routes...</div>
+                        <div class="loading-step" id="lStep3">Mapping daily activities...</div>
+                        <div class="loading-step" id="lStep4">Calculating estimates...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Result Section -->
+            <div id="pdf-content">
+            <section id="resultSection" class="section hidden">
+                <div class="result-header no-print">
+                    <button id="backToPlanner" class="btn-icon-text">
+                        <i data-lucide="arrow-left"></i> Edit Plan
+                    </button>
+                    <div class="result-actions">
+                        <button id="downloadPdf" class="btn btn-accent">
+                            <i data-lucide="download"></i> Download Itinerary (PDF)
+                        </button>
+                        <button id="shareJourney" class="btn btn-outline">
+                            <i data-lucide="share-2"></i> Share Journey
+                        </button>
+                    </div>
+                </div>
+
+                <div class="itinerary-grid">
+                    <div class="itinerary-main">
+                        <div class="itinerary-hero" id="itineraryHero">
+                            <h1 id="itineraryTitle" class="serif">Trip to Your Destination</h1>
+                            <p id="itinerarySub">Your personalized journey curated by Prayan AI.</p>
+                        </div>
+
+                        <div id="transportSection" class="result-category"></div>
+                        <div id="accommodationSection" class="result-category"></div>
+                        <div id="placesSection" class="result-category"></div>
+                        <div id="foodSection" class="result-category"></div>
+
+                        <div class="category-header">
+                            <span class="icon-emoji">📅</span> <h2 class="serif">Day-wise Itinerary</h2>
+                        </div>
+                        <div id="itineraryDays" class="days-list">
+                            <!-- Daily itinerary injected here -->
+                        </div>
+                    </div>
+
+                    <div class="itinerary-sidebar">
+                        <div class="estimate-card">
+                            <div class="category-header category-header-light">
+                                <span class="icon-emoji">💰</span> <h3>Budget Breakdown</h3>
+                            </div>
+                            <ul class="estimate-list">
+                                <li><span>Transport</span> <strong id="est-transport">---</strong></li>
+                                <li><span>Accommodation</span> <strong id="est-stay">---</strong></li>
+                                <li><span>Food</span> <strong id="est-food">---</strong></li>
+                                <li><span>Activities/Fees</span> <strong id="est-activities">---</strong></li>
+                                <li><span>Shopping/Misc</span> <strong id="est-misc">---</strong></li>
+                            </ul>
+                            <div class="estimate-total">
+                                <span>Total (per person)</span>
+                                <strong id="est-total" class="highlight-total">---</strong>
+                            </div>
+                            <p class="estimate-note">Estimates are approximations based on your budget preference.</p>
+                        </div>
+
+                        <div class="map-preview-card no-print">
+                            <div class="map-placeholder">
+                                <img id="itineraryMapImg" src="https://images.unsplash.com/photo-1540321158210-5ad3b6d47918?q=80&w=2187&auto=format&fit=crop" alt="Map Preview">
+                                <div class="map-overlay">
+                                    <button class="btn btn-dark btn-sm" id="googleMapsBtn">OPEN IN GOOGLE MAPS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tips-card">
+                            <div class="category-header category-header-light" style="margin-bottom: 15px;">
+                                <span class="icon-emoji">💡</span> <h3>Travel Tips</h3>
+                            </div>
+                            <ul id="travelTips" class="tips-list">
+                                <!-- Tips injected here -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            </div>
+            
+            <!-- Result Ads -->
+            <div id="resultAdPlaceholder" class="ads-footer hidden">
+                <div class="ad-placeholder-728x90">
+                    <span>Advertisement</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar Ads (Right) -->
+        <aside class="ads-sidebar sidebar-right">
+            <div class="ad-placeholder-160x600">
+                <span>Advertisement</span>
+            </div>
+        </aside>
+    </div>
+
+    <section class="section" style="padding: 2rem 5%; background: var(--surface-color); border-top: 1px solid var(--border-color); margin-top: 2rem;">
+        <div style="max-width: 800px; margin: 0 auto; background: var(--bg-color); border-radius: 12px; padding: 2.5rem; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <h2 class="serif" style="margin-bottom: 1.5rem; text-align: center; font-size: 1.8rem;">🔒 Privacy & Data Policy</h2>
+            
+            <div style="margin-bottom: 2rem;">
+                <h3 style="color: var(--primary-color); margin-bottom: 0.8rem; font-size: 1.2rem;">Your Data is Safe</h3>
+                <ul style="list-style: none; padding: 0; line-height: 1.8; color: var(--text-secondary);">
+                    <li>✅ <strong>No Data Collection:</strong> We do not collect, store, or track your trip planning data</li>
+                    <li>✅ <strong>Your API Key:</strong> Stored locally in your browser only (localStorage), never sent to our servers</li>
+                    <li>✅ <strong>Direct Communication:</strong> Your questions go directly to Google's Gemini API, we don't see them</li>
+                    <li>✅ <strong>No Account Required:</strong> Use Prayan AI completely anonymously</li>
+                    <li>✅ <strong>No Third-Party Tracking:</strong> We don't use analytics or tracking cookies</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <h3 style="color: var(--primary-color); margin-bottom: 0.8rem; font-size: 1.2rem;">How It Works</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Prayan AI runs entirely in your browser. When you enter your Gemini API key, it's saved locally on your device. 
+                    Your trip questions are sent directly from your browser to Google's Gemini API. We never see or store your data.
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <h3 style="color: var(--primary-color); margin-bottom: 0.8rem; font-size: 1.2rem;">Google Gemini API</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    This tool uses Google's Gemini API for AI-powered trip planning. Your data is subject to 
+                    <a href="https://policies.google.com/privacy" target="_blank" style="color: var(--accent-color); text-decoration: none;">Google's Privacy Policy</a>.
+                    We recommend reviewing Google's terms before using this tool.
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <h3 style="color: var(--primary-color); margin-bottom: 0.8rem; font-size: 1.2rem;">Your Responsibility</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    • Keep your API key secure and don't share it<br>
+                    • You are responsible for your API usage and any costs incurred<br>
+                    • AI-generated itineraries are suggestions - verify information before traveling
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
+                <p>© 2026 Prayan AI - A Product of AdiPragya Corporation.</p>
+                <p style="font-style: italic; margin-top: 0.5rem;">Last updated: March 2026</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Error Toast -->
+    <div id="errorToast" class="toast hidden">
+        <div class="toast-content">
+            <i data-lucide="alert-circle"></i>
+            <span id="errorMsg">Something went wrong.</span>
+            <button id="retryBtn" class="btn btn-sm">Retry</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="trip-planner.js"></script>
+</body>
+</html>
